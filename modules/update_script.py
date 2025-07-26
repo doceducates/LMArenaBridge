@@ -8,7 +8,7 @@ import json
 import re
 
 def load_jsonc_values(path):
-    """从一个 .jsonc 文件中加载数据，忽略注释，只返回键值对。"""
+    """Load data from a .jsonc file, ignoring comments, returning only key-value pairs."""
     try:
         with open(path, 'r', encoding='utf-8') as f:
             content = f.read()
@@ -16,18 +16,18 @@ def load_jsonc_values(path):
         content = re.sub(r'/\*.*?\*/', '', content, flags=re.DOTALL)
         return json.loads(content)
     except (FileNotFoundError, json.JSONDecodeError, Exception) as e:
-        print(f"加载或解析 {path} 的值时出错: {e}")
+        print(f"Error loading or parsing values from {path}: {e}")
         return None
 
 def get_all_relative_paths(directory):
-    """获取一个目录下所有文件和空文件夹的相对路径集合。"""
+    """Get a set of relative paths for all files and empty folders in a directory."""
     paths = set()
     for root, dirs, files in os.walk(directory):
-        # 添加文件
+        # Add files
         for name in files:
             path = os.path.join(root, name)
             paths.add(os.path.relpath(path, directory))
-        # 添加空文件夹
+        # Add empty folders
         for name in dirs:
             dir_path = os.path.join(root, name)
             if not os.listdir(dir_path):
@@ -35,13 +35,13 @@ def get_all_relative_paths(directory):
     return paths
 
 def main():
-    print("--- 更新脚本已启动 ---")
+    print("--- Update script started ---")
     
-    # 1. 等待主程序退出
-    print("等待主程序关闭 (3秒)...")
+    # 1. Wait for main program to exit
+    print("Waiting for main program to close (3 seconds)...")
     time.sleep(3)
     
-    # 2. 定义路径
+    # 2. Define paths
     destination_dir = os.getcwd()
     update_dir = "update_temp"
     source_dir_inner = os.path.join(update_dir, "LMArenaBridge-main")
@@ -50,41 +50,41 @@ def main():
     model_endpoint_map_filename = 'model_endpoint_map.json'
     
     if not os.path.exists(source_dir_inner):
-        print(f"错误：找不到源目录 {source_dir_inner}。更新失败。")
+        print(f"Error: Source directory {source_dir_inner} not found. Update failed.")
         return
         
-    print(f"源目录: {os.path.abspath(source_dir_inner)}")
-    print(f"目标目录: {os.path.abspath(destination_dir)}")
+    print(f"Source directory: {os.path.abspath(source_dir_inner)}")
+    print(f"Target directory: {os.path.abspath(destination_dir)}")
 
-    # 3. 备份关键文件
-    print("正在备份当前配置和模型文件...")
+    # 3. Backup critical files
+    print("Backing up current configuration and model files...")
     old_config_path = os.path.join(destination_dir, config_filename)
     old_models_path = os.path.join(destination_dir, models_filename)
     old_config_values = load_jsonc_values(old_config_path)
     
-    # 4. 确定要保留的文件和文件夹
-    # 保留 update_temp 自身, .git 目录, 和任何用户可能添加的隐藏文件/文件夹
+    # 4. Determine files and folders to preserve
+    # Preserve update_temp itself, .git directory, and any hidden files/folders users might have added
     preserved_items = {update_dir, ".git", ".github"}
 
-    # 5. 获取新旧文件列表
+    # 5. Get new and old file lists
     new_files = get_all_relative_paths(source_dir_inner)
-    # 排除 .git 和 .github 目录，因为它们不应该被部署
+    # Exclude .git and .github directories as they should not be deployed
     new_files = {f for f in new_files if not (f.startswith('.git') or f.startswith('.github'))}
 
     current_files = get_all_relative_paths(destination_dir)
     
-    # 6. 计算需要删除的文件和文件夹 (此功能已禁用，以防止意外删除用户文件)
-    # # 排除保留项和不受管理的用户文件（例如 venv）
+    # 6. Calculate files and folders to delete (this feature is disabled to prevent accidental deletion of user files)
+    # # Exclude preserved items and unmanaged user files (e.g. venv)
     # files_to_delete = current_files - new_files - {config_filename, models_filename}
     # files_to_delete = {f for f in files_to_delete if f.split(os.sep)[0] not in preserved_items}
     #
-    # print("\n--- 文件变更分析 ---")
+    # print("\n--- File Change Analysis ---")
     # if files_to_delete:
-    #     print("[-] 将删除以下旧文件/文件夹:")
+    #     print("[-] Will delete the following old files/folders:")
     #     for f in sorted(list(files_to_delete)):
     #         print(f"  - {f}")
     #
-    #     for f in sorted(list(files_to_delete), reverse=True): # 从内到外删除
+    #     for f in sorted(list(files_to_delete), reverse=True): # Delete from inside out
     #         try:
     #             path_to_delete = os.path.join(destination_dir, f)
     #             if os.path.isdir(path_to_delete.rstrip(os.sep)):
@@ -92,13 +92,13 @@ def main():
     #             elif os.path.isfile(path_to_delete):
     #                 os.remove(path_to_delete)
     #         except OSError as e:
-    #             print(f"删除 {f} 时出错: {e}")
+    #             print(f"Error deleting {f}: {e}")
     # else:
-    print("\n--- 文件变更分析 ---")
-    print("[*] 文件删除功能已禁用，以保护用户数据。仅执行文件复制和配置更新。")
+    print("\n--- File Change Analysis ---")
+    print("[*] File deletion feature is disabled to protect user data. Only file copying and configuration updates will be performed.")
 
-    # 7. 复制新文件（除配置文件外）
-    print("\n[+] 正在复制新文件...")
+    # 7. Copy new files (except configuration files)
+    print("\n[+] Copying new files...")
     try:
         new_config_template_path = os.path.join(source_dir_inner, config_filename)
         
@@ -106,29 +106,29 @@ def main():
             s = os.path.join(source_dir_inner, item)
             d = os.path.join(destination_dir, item)
             
-            # 跳过 .git 和 .github 目录
+            # Skip .git and .github directories
             if item in {".git", ".github"}:
                 continue
             
             if os.path.basename(s) == config_filename:
-                continue # 跳过主配置文件，稍后处理
+                continue # Skip main configuration file, handle later
             
             if os.path.basename(s) == model_endpoint_map_filename:
-                continue # 跳过模型端点映射文件，保留用户本地版本
+                continue # Skip model endpoint mapping file, preserve user's local version
 
             if os.path.isdir(s):
                 shutil.copytree(s, d, dirs_exist_ok=True)
             else:
                 shutil.copy2(s, d)
-        print("文件复制成功。")
+        print("File copying successful.")
 
     except Exception as e:
-        print(f"文件复制过程中发生错误: {e}")
+        print(f"Error occurred during file copying: {e}")
         return
 
-    # 8. 智能合并配置
+    # 8. Smart configuration merging
     if old_config_values and os.path.exists(new_config_template_path):
-        print("\n[*] 正在智能合并配置（保留注释）...")
+        print("\n[*] Smart merging configuration (preserving comments)...")
         try:
             with open(new_config_template_path, 'r', encoding='utf-8') as f:
                 new_config_content = f.read()
@@ -151,38 +151,38 @@ def main():
 
             with open(old_config_path, 'w', encoding='utf-8') as f:
                 f.write(new_config_content)
-            print("配置合并成功。")
+            print("Configuration merging successful.")
 
         except Exception as e:
-            print(f"配置合并过程中发生严重错误: {e}")
+            print(f"Serious error occurred during configuration merging: {e}")
     else:
-        print("无法进行智能合并，将直接使用新版配置文件。")
+        print("Unable to perform smart merging, will use new version configuration file directly.")
         if os.path.exists(new_config_template_path):
             shutil.copy2(new_config_template_path, old_config_path)
 
-    # 9. 清理临时文件夹
-    print("\n[*] 正在清理临时文件...")
+    # 9. Clean up temporary folder
+    print("\n[*] Cleaning up temporary files...")
     try:
         shutil.rmtree(update_dir)
-        print("清理完毕。")
+        print("Cleanup completed.")
     except Exception as e:
-        print(f"清理临时文件时发生错误: {e}")
+        print(f"Error occurred while cleaning temporary files: {e}")
 
-    # 10. 重启主程序
-    print("\n[*] 正在重启主程序...")
+    # 10. Restart main program
+    print("\n[*] Restarting main program...")
     try:
         main_script_path = os.path.join(destination_dir, "api_server.py")
         if not os.path.exists(main_script_path):
-             print(f"错误: 找不到主程序脚本 {main_script_path}。")
+             print(f"Error: Main program script {main_script_path} not found.")
              return
         
         subprocess.Popen([sys.executable, main_script_path])
-        print("主程序已在后台重新启动。")
+        print("Main program has been restarted in the background.")
     except Exception as e:
-        print(f"重启主程序失败: {e}")
-        print(f"请手动运行 {main_script_path}")
+        print(f"Failed to restart main program: {e}")
+        print(f"Please manually run {main_script_path}")
 
-    print("--- 更新完成 ---")
+    print("--- Update completed ---")
 
 if __name__ == "__main__":
     main()
