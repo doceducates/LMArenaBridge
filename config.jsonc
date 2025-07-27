@@ -64,5 +64,86 @@
   // API Key
   // Set an API Key to protect your service.
   // If set, all requests to /v1/chat/completions must include correct Bearer Token in Authorization header.
-  "api_key": "123"
+  "api_key": "123",
+
+  // --- Multi-Instance Configuration ---
+  "instances": {
+    "initial_count": 1,
+    "max_instances": 5,
+    "min_instances": 1,
+    "auto_scale": true,
+    "scale_up_threshold": 0.8,      // CPU/memory threshold
+    "scale_down_threshold": 0.3,
+    "load_balancing": "least_busy",  // round_robin, least_busy, response_time
+    "health_check_interval": 10,     // seconds
+    "session_regeneration_interval": 3600, // 1 hour
+    "instance_timeout": 30,          // seconds
+    "max_retries": 3
+  },
+
+  // --- Browser Configuration ---
+  "browser": {
+    "type": "chromium",              // chromium, firefox, webkit
+    "headless": false,               // true for production
+    "incognito": true,               // MANDATORY - prevents rate limiting on LMArena
+    "timeout": 30000,                // milliseconds
+    "viewport": {
+      "width": 1280,
+      "height": 720
+    },
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+    "proxy": {
+      "enabled": false,              // Enable proxy rotation to avoid rate limits
+      "rotation": "per_instance",    // per_instance, per_request, manual
+      "providers": [
+        {
+          "type": "http",            // http, socks5
+          "host": "proxy1.example.com",
+          "port": 8080,
+          "username": "user1",       // optional
+          "password": "pass1"        // optional
+        },
+        {
+          "type": "socks5",
+          "host": "proxy2.example.com",
+          "port": 1080
+        }
+      ],
+      "fallback_to_direct": true,    // Use direct connection if all proxies fail
+      "health_check": true,          // Test proxy connectivity before use
+      "rotation_interval": 3600,     // Rotate proxy every hour (seconds)
+      "max_retries": 3               // Retry failed proxies
+    }
+  },
+
+  // --- Instance Defaults ---
+  "instance_defaults": {
+    "mode": "direct_chat",           // direct_chat, battle
+    "battle_target": "A",            // A, B (for battle mode)
+    "auto_regenerate_sessions": true,
+    "session_lifetime": 3600,        // seconds
+    "max_requests_per_session": 100
+  },
+
+  // --- GUI Configuration ---
+  "gui": {
+    "enabled": true,
+    "port": 5104,
+    "host": "localhost",
+    "auto_open": true,
+    "refresh_interval": 5,           // seconds
+    "theme": "dark"                  // dark, light
+  },
+
+  // --- Monitoring Configuration ---
+  "monitoring": {
+    "enabled": true,
+    "log_level": "INFO",
+    "metrics_retention": 86400,      // 24 hours in seconds
+    "alert_thresholds": {
+      "response_time": 10,           // seconds
+      "error_rate": 0.1,             // 10%
+      "instance_failure_rate": 0.2   // 20%
+    }
+  }
 }

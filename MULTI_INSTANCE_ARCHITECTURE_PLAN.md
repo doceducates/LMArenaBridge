@@ -80,9 +80,11 @@ class BrowserInstance:
         self.mode = config.get('mode', 'direct_chat')
         self.status = 'initializing'
         self.last_activity = datetime.now()
+        self.proxy_config = config.get('proxy')  # Proxy settings for this instance
     
     async def initialize(self):
-        # Launch browser in incognito mode
+        # Launch browser in MANDATORY incognito mode (prevents rate limiting)
+        # Apply proxy settings if configured
         # Navigate to lmarena.ai
         # Select mode (direct/battle)
         # Generate session IDs
@@ -96,6 +98,12 @@ class BrowserInstance:
         # Verify browser is responsive
         # Check session validity
         # Test network connectivity
+        # Validate proxy if configured
+        
+    async def setup_proxy(self):
+        # Configure proxy for this instance
+        # Test proxy connectivity
+        # Fallback to direct connection if proxy fails
 ```
 
 ### 2. Instance Coordinator (`modules/instance_coordinator.py`)
@@ -307,13 +315,35 @@ sequenceDiagram
   "browser": {
     "type": "chromium",              // chromium, firefox, webkit
     "headless": false,               // true for production
-    "incognito": true,
+    "incognito": true,               // MANDATORY - prevents rate limiting on LMArena
     "timeout": 30000,                // milliseconds
     "viewport": {
       "width": 1280,
       "height": 720
     },
-    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+    "proxy": {
+      "enabled": false,              // Enable proxy rotation to avoid rate limits
+      "rotation": "per_instance",    // per_instance, per_request, manual
+      "providers": [
+        {
+          "type": "http",            // http, socks5
+          "host": "proxy1.example.com",
+          "port": 8080,
+          "username": "user1",       // optional
+          "password": "pass1"        // optional
+        },
+        {
+          "type": "socks5",
+          "host": "proxy2.example.com",
+          "port": 1080
+        }
+      ],
+      "fallback_to_direct": true,    // Use direct connection if all proxies fail
+      "health_check": true,          // Test proxy connectivity before use
+      "rotation_interval": 3600,     // Rotate proxy every hour (seconds)
+      "max_retries": 3               // Retry failed proxies
+    }
   },
   
   // --- Instance Defaults ---
@@ -485,22 +515,74 @@ sequenceDiagram
 - **Short-term**: Create replacement instance
 - **Long-term**: Analyze failure patterns and optimize
 
+## 🛡️ Rate Limiting Prevention & Proxy Management
+
+### **Critical: LMArena Rate Limiting**
+LMArena enforces strict rate limiting that can only be bypassed by using **incognito mode**. Our architecture addresses this with:
+
+#### **Mandatory Incognito Mode**
+- **Every browser instance** launches in incognito mode
+- **Isolated sessions** prevent cross-instance rate limiting
+- **Fresh browser state** for each instance
+- **No shared cookies or storage** between instances
+
+#### **Optional Proxy Support**
+For additional rate limiting protection:
+
+```python
+class ProxyManager:
+    def __init__(self, config: dict):
+        self.proxies = config.get('proxy', {}).get('providers', [])
+        self.rotation_strategy = config.get('proxy', {}).get('rotation', 'per_instance')
+        self.current_proxy_index = 0
+    
+    async def get_proxy_for_instance(self, instance_id: str):
+        if self.rotation_strategy == 'per_instance':
+            # Each instance gets a dedicated proxy
+            return self.proxies[hash(instance_id) % len(self.proxies)]
+        elif self.rotation_strategy == 'per_request':
+            # Rotate proxy for each request
+            proxy = self.proxies[self.current_proxy_index % len(self.proxies)]
+            self.current_proxy_index += 1
+            return proxy
+    
+    async def test_proxy_health(self, proxy: dict) -> bool:
+        # Test proxy connectivity and speed
+        # Return True if proxy is healthy
+```
+
+#### **Proxy Configuration Options**
+- **Per-Instance**: Each browser instance uses a different proxy
+- **Per-Request**: Rotate proxies for each API request
+- **Manual**: Manually assign proxies to specific instances
+- **Health Checking**: Automatic proxy health validation
+- **Fallback**: Direct connection if all proxies fail
+
+#### **Rate Limiting Mitigation Strategy**
+1. **Primary Defense**: Incognito mode (mandatory)
+2. **Secondary Defense**: Proxy rotation (optional)
+3. **Tertiary Defense**: Request spacing and retry logic
+4. **Monitoring**: Track rate limit responses and adjust behavior
+
 ## 🔒 Security Considerations
 
 ### Browser Security
-- Isolated incognito sessions
+- **Mandatory isolated incognito sessions**
 - No persistent data storage
 - Sandboxed browser processes
+- Optional proxy encryption
 
 ### API Security
 - Existing API key authentication
 - Rate limiting per instance
 - Request validation
+- Proxy authentication support
 
 ### GUI Security
 - Local-only access by default
 - Optional authentication
 - CSRF protection
+- Secure proxy credential storage
 
 ## 📈 Monitoring & Analytics
 
@@ -516,12 +598,45 @@ sequenceDiagram
 - Performance degradation
 - Resource exhaustion
 
+## 📦 Updated Dependencies
+
+### Enhanced `requirements.txt`
+```
+# Existing dependencies
+fastapi
+uvicorn[standard]
+requests
+packaging
+aiohttp
+
+# New dependencies for multi-instance support
+playwright>=1.40.0          # Browser automation
+asyncio-mqtt>=0.11.0        # Optional: for distributed coordination
+psutil>=5.9.0               # System monitoring
+websockets>=11.0.0          # Enhanced WebSocket support
+jinja2>=3.1.0               # Template engine for GUI
+aiofiles>=23.0.0            # Async file operations
+```
+
+### Installation Commands
+```bash
+# Install Python dependencies
+pip install -r requirements.txt
+
+# Install Playwright browsers
+playwright install chromium
+
+# Optional: Install additional browsers
+playwright install firefox webkit
+```
+
 ## 🚀 Migration Strategy
 
 ### Backward Compatibility
 - Existing API endpoints unchanged
 - Configuration file extensions (not replacements)
 - Gradual migration path
+- Tampermonkey script remains functional during transition
 
 ### Migration Steps
-1. **Install new dependencies** (
+1. **Install new dependencies** (Playwright, additional packages)

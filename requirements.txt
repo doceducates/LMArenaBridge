@@ -1,5 +1,12 @@
+# Existing dependencies
 fastapi
 uvicorn[standard]
 requests
 packaging
 aiohttp
+
+# New dependencies for multi-instance support
+playwright>=1.40.0          # Browser automation
+psutil>=5.9.0               # System monitoring
+websockets>=11.0.0          # Enhanced WebSocket support
+jinja2>=3.1.0               # Template engine for GUI

@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LMArenaBridge Multi-Instance Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="/static/css/dashboard.css" rel="stylesheet">
+</head>
+<body class="bg-dark text-light">
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">
+                <i class="fas fa-robot me-2"></i>
+                LMArenaBridge Multi-Instance Dashboard
+            </a>
+            <div class="navbar-nav ms-auto">
+                <span class="navbar-text me-3">
+                    <i class="fas fa-circle text-success me-1" id="connection-status"></i>
+                    <span id="connection-text">Connected</span>
+                </span>
+                <button class="btn btn-outline-light btn-sm" id="refresh-btn">
+                    <i class="fas fa-sync-alt"></i> Refresh
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid mt-4">
+        <!-- System Overview Cards -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card bg-secondary text-light">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h6 class="card-title">Total Instances</h6>
+                                <h3 class="mb-0" id="total-instances">-</h3>
+                            </div>
+                            <div class="align-self-center">
+                                <i class="fas fa-server fa-2x text-primary"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-secondary text-light">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h6 class="card-title">Healthy Instances</h6>
+                                <h3 class="mb-0 text-success" id="healthy-instances">-</h3>
+                            </div>
+                            <div class="align-self-center">
+                                <i class="fas fa-heart fa-2x text-success"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-secondary text-light">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h6 class="card-title">Active Requests</h6>
+                                <h3 class="mb-0 text-warning" id="active-requests">-</h3>
+                            </div>
+                            <div class="align-self-center">
+                                <i class="fas fa-tasks fa-2x text-warning"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-secondary text-light">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h6 class="card-title">System Load</h6>
+                                <h3 class="mb-0" id="system-load">-</h3>
+                            </div>
+                            <div class="align-self-center">
+                                <i class="fas fa-tachometer-alt fa-2x text-info"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content Tabs -->
+        <ul class="nav nav-tabs" id="main-tabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="instances-tab" data-bs-toggle="tab" data-bs-target="#instances" type="button" role="tab">
+                    <i class="fas fa-server me-1"></i> Instances
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="monitoring-tab" data-bs-toggle="tab" data-bs-target="#monitoring" type="button" role="tab">
+                    <i class="fas fa-chart-line me-1"></i> Monitoring
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="load-balancer-tab" data-bs-toggle="tab" data-bs-target="#load-balancer" type="button" role="tab">
+                    <i class="fas fa-balance-scale me-1"></i> Load Balancer
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="logs-tab" data-bs-toggle="tab" data-bs-target="#logs" type="button" role="tab">
+                    <i class="fas fa-file-alt me-1"></i> Logs
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="settings-tab" data-bs-toggle="tab" data-bs-target="#settings" type="button" role="tab">
+                    <i class="fas fa-cog me-1"></i> Settings
+                </button>
+            </li>
+        </ul>
+
+        <div class="tab-content mt-3" id="main-tab-content">
+            <!-- Instances Tab -->
+            <div class="tab-pane fade show active" id="instances" role="tabpanel">
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card bg-secondary">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-server me-2"></i>Instance Management
+                                </h5>
+                                <div>
+                                    <button class="btn btn-success btn-sm me-2" id="add-instance-btn">
+                                        <i class="fas fa-plus me-1"></i>Add Instance
+                                    </button>
+                                    <button class="btn btn-warning btn-sm" id="scale-instances-btn">
+                                        <i class="fas fa-expand-arrows-alt me-1"></i>Auto Scale
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-dark table-striped">
+                                        <thead>
+                                            <tr>
+                                                <th>Instance ID</th>
+                                                <th>Status</th>
+                                                <th>Mode</th>
+                                                <th>Requests</th>
+                                                <th>Response Time</th>
+                                                <th>Last Activity</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="instances-table-body">
+                                            <!-- Dynamic content -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Monitoring Tab -->
+            <div class="tab-pane fade" id="monitoring" role="tabpanel">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card bg-secondary">
+                            <div class="card-header">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-heartbeat me-2"></i>Health Metrics
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="health-chart" width="400" height="200"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card bg-secondary">
+                            <div class="card-header">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-clock me-2"></i>Response Times
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="response-time-chart" width="400" height="200"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <div class="card bg-secondary">
+                            <div class="card-header">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>Recent Alerts
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div id="alerts-container">
+                                    <!-- Dynamic alerts -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Load Balancer Tab -->
+            <div class="tab-pane fade" id="load-balancer" role="tabpanel">
+                <div class="row">
+                    <div class="col-md-8">
+                        <div class="card bg-secondary">
+                            <div class="card-header">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-chart-pie me-2"></i>Load Distribution
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="load-distribution-chart" width="400" height="200"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card bg-secondary">
+                            <div class="card-header">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-cogs me-2"></i>Load Balancer Settings
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label for="lb-strategy" class="form-label">Strategy</label>
+                                    <select class="form-select" id="lb-strategy">
+                                        <option value="least_busy">Least Busy</option>
+                                        <option value="round_robin">Round Robin</option>
+                                        <option value="response_time">Response Time</option>
+                                        <option value="random">Random</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="max-retries" class="form-label">Max Retries</label>
+                                    <input type="number" class="form-control" id="max-retries" min="1" max="10" value="3">
+                                </div>
+                                <button class="btn btn-primary" id="update-lb-settings">
+                                    <i class="fas fa-save me-1"></i>Update Settings
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <div class="card bg-secondary">
+                            <div class="card-header">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-chart-bar me-2"></i>Request Statistics
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-3">
+                                        <div class="text-center">
+                                            <h4 class="text-primary" id="total-requests">0</h4>
+                                            <small>Total Requests</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="text-center">
+                                            <h4 class="text-success" id="successful-requests">0</h4>
+                                            <small>Successful</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="text-center">
+                                            <h4 class="text-danger" id="failed-requests">0</h4>
+                                            <small>Failed</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="text-center">
+                                            <h4 class="text-warning" id="retry-count">0</h4>
+                                            <small>Retries</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Logs Tab -->
+            <div class="tab-pane fade" id="logs" role="tabpanel">
+                <div class="card bg-secondary">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="fas fa-file-alt me-2"></i>System Logs
+                        </h5>
+                        <div>
+                            <select class="form-select form-select-sm me-2" id="log-level-filter" style="width: auto; display: inline-block;" title="Filter logs by level">
+                                <option value="">All Levels</option>
+                                <option value="ERROR">Error</option>
+                                <option value="WARNING">Warning</option>
+                                <option value="INFO">Info</option>
+                                <option value="DEBUG">Debug</option>
+                            </select>
+                            <button class="btn btn-outline-light btn-sm" id="clear-logs-btn">
+                                <i class="fas fa-trash me-1"></i>Clear
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div id="logs-container" style="height: 400px; overflow-y: auto; font-family: monospace; font-size: 0.9em;">
+                            <!-- Dynamic log entries -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Settings Tab -->
+            <div class="tab-pane fade" id="settings" role="tabpanel">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card bg-secondary">
+                            <div class="card-header">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-sliders-h me-2"></i>Instance Settings
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label for="min-instances" class="form-label">Minimum Instances</label>
+                                    <input type="number" class="form-control" id="min-instances" min="1" max="10" value="1">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="max-instances" class="form-label">Maximum Instances</label>
+                                    <input type="number" class="form-control" id="max-instances" min="1" max="20" value="5">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="auto-scale" class="form-label">Auto Scaling</label>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="auto-scale" checked>
+                                        <label class="form-check-label" for="auto-scale">
+                                            Enable automatic scaling
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="health-check-interval" class="form-label">Health Check Interval (seconds)</label>
+                                    <input type="number" class="form-control" id="health-check-interval" min="5" max="60" value="10">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card bg-secondary">
+                            <div class="card-header">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-globe me-2"></i>Browser Settings
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label for="browser-type" class="form-label">Browser Type</label>
+                                    <select class="form-select" id="browser-type">
+                                        <option value="chromium">Chromium</option>
+                                        <option value="firefox">Firefox</option>
+                                        <option value="webkit">WebKit</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="headless-mode" class="form-label">Headless Mode</label>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="headless-mode">
+                                        <label class="form-check-label" for="headless-mode">
+                                            Run browsers in headless mode
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="proxy-enabled" class="form-label">Proxy Support</label>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="proxy-enabled">
+                                        <label class="form-check-label" for="proxy-enabled">
+                                            Enable proxy rotation
+                                        </label>
+                                    </div>
+                                </div>
+                                <button class="btn btn-primary" id="save-settings-btn">
+                                    <i class="fas fa-save me-1"></i>Save Settings
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <!-- Add Instance Modal -->
+    <div class="modal fade" id="addInstanceModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content bg-dark text-light">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add New Instance</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="instance-mode" class="form-label">Mode</label>
+                        <select class="form-select" id="instance-mode">
+                            <option value="direct_chat">Direct Chat</option>
+                            <option value="battle">Battle Mode</option>
+                        </select>
+                    </div>
+                    <div class="mb-3" id="battle-target-group" style="display: none;">
+                        <label for="battle-target" class="form-label">Battle Target</label>
+                        <select class="form-select" id="battle-target">
+                            <option value="A">Assistant A</option>
+                            <option value="B">Assistant B</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="instance-browser" class="form-label">Browser Type</label>
+                        <select class="form-select" id="instance-browser">
+                            <option value="chromium">Chromium</option>
+                            <option value="firefox">Firefox</option>
+                            <option value="webkit">WebKit</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="create-instance-btn">Create Instance</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="/static/js/websocket-client.js"></script>
+    <script src="/static/js/dashboard.js"></script>
+</body>
+</html>
